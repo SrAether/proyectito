@@ -4,7 +4,7 @@
 **Entorno R:** pruebasVal  
 **Proyecto:** Modelo de Regresión Lineal Múltiple  
 **Fecha:** Noviembre 2025  
-**Versión:** 1.0
+**Versión:** 2.0 (con corrección de heterocedasticidad)
 
 ---
 
@@ -581,7 +581,11 @@ No es crítico para el objetivo descriptivo del modelo, pero limita interpretaci
 
 ### 8.4 Supuesto 4: Homocedasticidad
 
-**Prueba**: Test de Breusch-Pagan
+**Definición**: La homocedasticidad requiere que la varianza de los errores sea constante para todas las observaciones: Var(εᵢ|X) = σ²
+
+#### 8.4.1 Pruebas de Heterocedasticidad
+
+**Prueba 1: Test de Breusch-Pagan**
 
 **Hipótesis**:
 - **H₀**: Homocedasticidad (Var(ε|X) = σ²)
@@ -593,28 +597,107 @@ BP = n \cdot R^2_{auxiliary}
 $$
 donde $R^2_{auxiliary}$ proviene de regresar $\hat{\varepsilon}^2$ sobre X's.
 
-**Resultado** (ilustrativo):
-- **BP = 42.357**
-- **p-valor = 0.0234**
+**Resultado**:
+- **BP = 384.74**
+- **Grados de libertad = 4**
+- **p-valor < 0.001**
 
-**Conclusión**: ⚠ HAY EVIDENCIA DE HETEROCEDASTICIDAD (p < 0.05)
+**Conclusión**: ✗ SE RECHAZA H₀ - HAY EVIDENCIA FUERTE DE HETEROCEDASTICIDAD
 
-**Implicaciones**:
-- Los estimadores MCO siguen siendo **insesgados** y **consistentes**
-- Pero los **errores estándar** son incorrectos
-- Las pruebas t y F pueden ser inválidas
+**Prueba 2: Test de White (más robusto)**
 
-**Solución**: Usar **errores estándar robustos** (White, HC3)
+La prueba de White es más general y NO asume una forma específica de heterocedasticidad.
+
+**Resultado**:
+- **LM = n×R² = 679.62**
+- **Grados de libertad = 8**
+- **p-valor < 0.001**
+
+**Conclusión**: ✗ SE CONFIRMA HETEROCEDASTICIDAD
+
+#### 8.4.2 Implicaciones de la Heterocedasticidad
+
+**Efectos en el Modelo**:
+1. Los estimadores MCO siguen siendo **INSESGADOS** y **CONSISTENTES** ✓
+2. Los estimadores MCO ya NO son **EFICIENTES** (no tienen varianza mínima) ✗
+3. Los **errores estándar** calculados por MCO son **INCORRECTOS** ✗
+4. Las pruebas **t y F** son **INVÁLIDAS** ✗
+5. Los **intervalos de confianza** son **INCORRECTOS** ✗
+
+**Diagnóstico Visual**:
+- Gráfico de residuos vs valores ajustados muestra patrón de dispersión creciente
+- Residuos cuadrados vs valores ajustados muestran tendencia positiva
+- Scale-Location plot confirma varianza no constante
+
+#### 8.4.3 Corrección Aplicada: Errores Robustos de White
+
+**Cuando NO se conoce la forma de la heterocedasticidad** (nuestro caso), la solución estándar es usar errores estándar robustos a heterocedasticidad.
+
+**Tipos de Corrección HC (Heteroskedasticity Consistent)**:
+- **HC0**: Corrección básica de White
+- **HC1**: Ajuste para muestras pequeñas (n/(n-k))
+- **HC2**: Ajusta por leverage de cada observación
+- **HC3**: Más robusta y conservadora (RECOMENDADA) ✓
+
+**Implementación**:
 
 ```r
 library(sandwich)
 library(lmtest)
 
+# Matriz de varianzas-covarianzas robusta (HC3)
+vcov_robust <- vcovHC(modelo, type = "HC3")
+
 # Errores estándar robustos
-coeftest(modelo, vcov = vcovHC(modelo, type = "HC3"))
+coeftest(modelo, vcov = vcov_robust)
 ```
 
-**Conclusión Final**: ✓ AJUSTADO con errores robustos
+#### 8.4.4 Comparación: MCO vs Errores Robustos
+
+| Variable | Coef | EE (MCO) | EE (HC3) | p-valor (MCO) | p-valor (HC3) | Cambio |
+|----------|------|----------|----------|---------------|---------------|--------|
+| Intercepto | -19.00 | 8.74 | 11.52 | 0.030* | 0.099 | **Pierde significancia** |
+| Presupuesto | 2.18 | 0.036 | 0.088 | <0.001*** | <0.001*** | Mantiene |
+| Idioma Inglés | -22.89 | 6.74 | 5.64 | <0.001*** | <0.001*** | Mantiene |
+| País Fuerte | 1.47 | 3.13 | 3.29 | 0.639 | 0.655 | Mantiene |
+| Duración² | 0.0015 | 0.00039 | 0.00064 | <0.001*** | 0.017* | Mantiene |
+
+**Observaciones Clave**:
+1. **Los coeficientes NO cambian** (siguen siendo insesgados)
+2. Los errores estándar robustos son **generalmente MAYORES**
+3. Una variable (Intercepto) pierde significancia estadística
+4. Los intervalos de confianza son más amplios (más conservadores)
+5. Las conclusiones sustantivas principales se mantienen
+
+#### 8.4.5 Intervalos de Confianza Robustos
+
+**Comparación de Amplitud de IC (95%)**:
+
+| Variable | Amplitud IC (MCO) | Amplitud IC (HC3) | Diferencia |
+|----------|-------------------|-------------------|------------|
+| Intercepto | 34.26 | 45.16 | +31.8% más amplio |
+| Presupuesto | 0.14 | 0.34 | +145% más amplio |
+| Idioma Inglés | 26.43 | 22.12 | -16.3% (más preciso) |
+| País Fuerte | 12.27 | 12.91 | +5.2% más amplio |
+| Duración² | 0.0015 | 0.0025 | +67% más amplio |
+
+**Interpretación**: Los IC robustos son más confiables y, en su mayoría, más amplios (conservadores).
+
+#### 8.4.6 Recomendaciones
+
+**Para este Modelo**:
+1. ✓ **USAR SIEMPRE** errores estándar robustos (HC3) para inferencia
+2. ✓ Reportar ambas especificaciones (MCO y robustos) para transparencia
+3. ✓ Basar conclusiones en resultados con errores robustos
+4. ✓ Los coeficientes estimados son válidos (no necesitan corrección)
+5. ✓ Solo los errores estándar necesitan corrección
+
+**Alternativas no implementadas**:
+- **MCP (Mínimos Cuadrados Ponderados)**: Requiere conocer la forma de heterocedasticidad
+- **Transformaciones**: Log-log podría estabilizar varianza
+- **Modelos no lineales**: GLM con familia apropiada
+
+**Conclusión Final**: ✓ HETEROCEDASTICIDAD CORREGIDA mediante errores robustos HC3
 
 ### 8.5 Supuesto 5: No Autocorrelación
 
@@ -654,16 +737,37 @@ coeftest(modelo, vcov = vcovHC(modelo, type = "HC3"))
 
 ### 8.7 Resumen de Supuestos
 
-| Supuesto | Prueba | Resultado | Cumplimiento |
-|----------|--------|-----------|--------------|
-| Linealidad | Visual | Aleatoria | ✓ CUMPLE |
-| No Multicolinealidad | VIF | Todos < 5 | ✓ CUMPLE |
-| No Endogeneidad | Teórico | Posible V.O. | ⚠ LEVE |
-| Homocedasticidad | BP Test | p = 0.023 | ⚠ AJUSTADO |
-| No Autocorrelación | BG Test | N/A | ✓ N/A |
-| Normalidad | Q-Q, SW | p = 0.003 | ✓ OK (N grande) |
+| Supuesto | Prueba Utilizada | Estadístico | p-valor | Resultado | Acción Tomada |
+|----------|------------------|-------------|---------|-----------|---------------|
+| **1. Linealidad** | Inspección Visual | - | - | ✓ CUMPLE | Ninguna |
+| **2. No Multicolinealidad** | VIF | VIF_max = 1.21 | - | ✓ CUMPLE | Ninguna |
+| **3. No Endogeneidad** | Análisis Teórico | - | - | ⚠ Posible V.O. | Cuidado en interpretación causal |
+| **4. Homocedasticidad** | Breusch-Pagan<br>White | BP = 384.74<br>LM = 679.62 | <0.001<br><0.001 | ✗ HETERO | ✓ Errores robustos HC3 |
+| **5. No Autocorrelación** | N/A (Cross-section) | - | - | ✓ N/A | Ninguna |
+| **6. Normalidad** | Q-Q Plot<br>Shapiro-Wilk | - | - | ✓ OK (N grande) | TLC garantiza validez |
 
-**Conclusión General**: El modelo cumple satisfactoriamente los supuestos, con ajustes menores (errores robustos).
+**Leyenda**:
+- ✓ = Supuesto cumplido
+- ⚠ = Precaución necesaria
+- ✗ = Supuesto violado pero corregido
+- N/A = No aplica
+
+**Resumen Ejecutivo**:
+1. **Multicolinealidad**: ✓ No hay problema (VIF < 5)
+2. **Heterocedasticidad**: ✗ Presente pero CORREGIDA con errores robustos HC3
+3. **Normalidad**: ✓ Asintóticamente válida (n = 3,561)
+4. **Linealidad**: ✓ Razonablemente cumplida
+5. **Endogeneidad**: ⚠ Potencial por variables omitidas
+
+**Conclusión General**: 
+
+El modelo cumple satisfactoriamente los supuestos fundamentales del modelo de regresión lineal clásico. La heterocedasticidad detectada ha sido apropiadamente manejada mediante el uso de errores estándar robustos de White (HC3), lo que garantiza la validez de las inferencias estadísticas.
+
+**Validez de las Inferencias**:
+- ✓ Los coeficientes estimados son **insesgados** y **consistentes**
+- ✓ Los errores estándar robustos son **válidos** para inferencia
+- ✓ Las pruebas de hipótesis son **confiables**
+- ✓ Los intervalos de confianza son **correctos** (aunque más amplios)
 
 ---
 
@@ -814,7 +918,7 @@ Con solo término cuadrático, el efecto es monotónico decreciente (penalizaci�
 
 5. **El modelo explica ~68% de la variabilidad** en ingresos internacionales, indicando buen ajuste, pero también señalando la importancia de factores no observados (ej. calidad, marketing).
 
-6. **Los supuestos del modelo se cumplen razonablemente**, con ajustes menores para heterocedasticidad mediante errores estándar robustos.
+6. **La heterocedasticidad detectada ha sido corregida** mediante errores estándar robustos de White (HC3), garantizando la validez de todas las inferencias estadísticas. Los coeficientes permanecen insesgados y las pruebas de hipótesis son ahora confiables.
 
 ### 11.2 Implicaciones para la Industria
 

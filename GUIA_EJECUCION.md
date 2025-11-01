@@ -2,7 +2,8 @@
 ## Proyecto: Análisis de Ingresos Internacionales IMDB (2000-2020)
 
 **Entorno R:** pruebasVal  
-**Última actualización:** Noviembre 2025
+**Última actualización:** Noviembre 2025  
+**Versión:** 2.0 (con corrección de heterocedasticidad)
 
 ---
 
@@ -28,8 +29,10 @@ source("scripts/setup.R")
 
 # 2. Ejecutar pipeline completo
 source("scripts/01_limpieza_datos.R")
+source("scripts/02_analisis_exploratorio.R")
 source("scripts/03_modelo_regresion.R")
 source("scripts/04a_multicolinealidad.R")
+source("scripts/04d_heterocedasticidad.R")
 
 # 3. Lanzar aplicación Shiny
 library(shiny)
@@ -50,16 +53,27 @@ source("scripts/01_limpieza_datos.R")
 # ⏱ Tiempo estimado: 2-3 minutos
 # 📁 Genera: data/datos_limpios.csv
 
-# Paso 3: Estimar modelo
+# Paso 3: Análisis exploratorio (opcional pero recomendado)
+source("scripts/02_analisis_exploratorio.R")
+# ⏱ Tiempo estimado: 1-2 minutos
+# 📁 Genera: 12 gráficos exploratorios
+
+# Paso 4: Estimar modelo
 source("scripts/03_modelo_regresion.R")
 # ⏱ Tiempo estimado: 1-2 minutos
 # 📁 Genera: resultados/modelo/modelo_regresion.rds y gráficos
 
-# Paso 4: Verificar supuestos (opcional pero recomendado)
+# Paso 5: Verificar multicolinealidad
 source("scripts/04a_multicolinealidad.R")
 # ⏱ Tiempo estimado: 30 segundos
+# 📁 Genera: VIF, matrices de correlación
 
-# Paso 5: Lanzar Shiny App
+# Paso 6: Verificar y corregir heterocedasticidad (IMPORTANTE)
+source("scripts/04d_heterocedasticidad.R")
+# ⏱ Tiempo estimado: 45 segundos
+# 📁 Genera: Errores robustos HC3, comparaciones MCO vs Robust
+
+# Paso 7: Lanzar Shiny App
 library(shiny)
 runApp("shiny_app")
 # 🌐 Se abrirá en tu navegador
@@ -89,7 +103,13 @@ proyecto/
 │   │   ├── 06_reales_vs_predichos.png
 │   │   ├── 07_matriz_correlacion_corrplot.png
 │   │   ├── 08_matriz_correlacion_ggplot.png
-│   │   └── 09_vif_barplot.png
+│   │   ├── 09_vif_barplot.png
+│   │   ├── 10_hetero_residuos_vs_ajustados.png    [Nuevo v2.0]
+│   │   ├── 11_hetero_residuos_cuadrados.png       [Nuevo v2.0]
+│   │   ├── 12_hetero_scale_location.png           [Nuevo v2.0]
+│   │   ├── 13_comparacion_errores_estandar.png    [Nuevo v2.0]
+│   │   ├── 14_intervalos_confianza.png            [Nuevo v2.0]
+│   │   └── eda_01 a eda_12 (análisis exploratorio)
 │   │
 │   ├── tablas/
 │   │   ├── valores_faltantes_originales.csv
@@ -97,12 +117,18 @@ proyecto/
 │   │   ├── coeficientes_modelo.csv
 │   │   ├── metricas_ajuste.csv
 │   │   ├── matriz_correlacion.csv
-│   │   └── vif_valores.csv
+│   │   ├── vif_valores.csv
+│   │   ├── pruebas_heterocedasticidad.csv         [Nuevo v2.0]
+│   │   ├── comparacion_errores_robustos.csv       [Nuevo v2.0]
+│   │   ├── intervalos_confianza_comparacion.csv   [Nuevo v2.0]
+│   │   ├── coeficientes_robustos.csv              [Nuevo v2.0]
+│   │   └── tabla_comparativa_mco_robust.txt       [Nuevo v2.0]
 │   │
 │   └── modelo/
 │       ├── modelo_regresion.rds
 │       ├── resumen_modelo.txt
-│       └── tabla_stargazer.txt
+│       ├── tabla_stargazer.txt
+│       └── vcov_robust_hc3.rds                     [Nuevo v2.0]
 ```
 
 ---
@@ -173,6 +199,29 @@ gc()  # Garbage collection
 memory.limit(size = 8000)  # 8 GB
 ```
 
+### Problema 6: "¿Qué son los errores robustos y por qué los necesito?"
+
+**Explicación:**
+La heterocedasticidad hace que los errores estándar de MCO sean incorrectos, lo que invalida las pruebas t y los intervalos de confianza.
+
+**Solución:**
+Los errores robustos de White (HC3) corrigen este problema:
+```r
+# El script 04d_heterocedasticidad.R hace esto automáticamente
+source("scripts/04d_heterocedasticidad.R")
+
+# Para usar errores robustos manualmente:
+library(sandwich)
+library(lmtest)
+coeftest(modelo, vcov = vcovHC(modelo, type = "HC3"))
+```
+
+**Impacto:**
+- Los coeficientes NO cambian (siguen siendo válidos)
+- Los errores estándar SÍ cambian (ahora son correctos)
+- Las pruebas de significancia son ahora confiables
+- Los intervalos de confianza son más amplios pero correctos
+
 ---
 
 ## 💡 CONSEJOS Y MEJORES PRÁCTICAS
@@ -181,8 +230,11 @@ memory.limit(size = 8000)  # 8 GB
 
 **SIEMPRE ejecuta en este orden:**
 ```
-setup.R → 01_limpieza_datos.R → 03_modelo_regresion.R → 04a_multicolinealidad.R
+setup.R → 01_limpieza_datos.R → 02_analisis_exploratorio.R → 
+03_modelo_regresion.R → 04a_multicolinealidad.R → 04d_heterocedasticidad.R
 ```
+
+**IMPORTANTE:** El script `04d_heterocedasticidad.R` debe ejecutarse después del modelo para obtener errores estándar robustos válidos.
 
 ### 2. Revisar Salidas
 
@@ -247,25 +299,50 @@ render("informe.Rmd", output_file = "informe_final.html")
 
 ### ¿Qué significa cada métrica?
 
-**R² = 0.68** (ejemplo)
-- El modelo explica el 68% de la variabilidad en ingresos
-- ✓ Bueno si > 0.6 en ciencias sociales
+**R² = 0.5606**
+- El modelo explica el 56.06% de la variabilidad en ingresos internacionales
+- ✓ Aceptable para ciencias sociales (típicamente R² > 0.5 es bueno)
 
-**RMSE = 48 millones USD**
+**RMSE = 92.70 millones USD**
 - Error promedio de predicción
-- Comparar con media de ingresos para relativizar
+- Significa que las predicciones se desvían ±92.7 millones en promedio
 
-**VIF < 5**
+**VIF < 5** (VIF máximo = 1.21)
 - ✓ No hay multicolinealidad problemática
-- Variables independientes no están muy correlacionadas
+- Variables independientes no están correlacionadas entre sí
 
 **p-valor < 0.05**
 - ✓ Variable es estadísticamente significativa
 - Rechazamos que el coeficiente sea cero
+- **IMPORTANTE:** Usar p-valores de errores robustos (HC3)
 
-**Coeficiente de Presupuesto = 1.25**
+**Coeficiente de Presupuesto = 2.18**
 - Por cada millón USD más de presupuesto
-- Los ingresos aumentan 1.25 millones USD
+- Los ingresos internacionales aumentan 2.18 millones USD
+- ROI implícito: 218% (muy rentable)
+
+### Interpretando la Heterocedasticidad
+
+**Test de Breusch-Pagan: p < 0.001**
+- ✗ HAY heterocedasticidad presente
+- Los errores estándar de MCO NO son confiables
+
+**Test de White: p < 0.001**
+- ✗ Confirma heterocedasticidad
+- Necesitamos usar errores robustos
+
+**Errores Robustos (HC3)**
+- ✓ Corrigen el problema de heterocedasticidad
+- Los coeficientes siguen siendo válidos
+- Los errores estándar ahora son correctos
+- **Usar SIEMPRE estos para inferencia**
+
+**Cambios en Significancia:**
+- Intercepto: Pierde significancia (p = 0.030 → 0.099)
+- Presupuesto: Mantiene alta significancia (p < 0.001)
+- Idioma Inglés: Mantiene significancia (p < 0.001)
+- País Fuerte: Sigue no significativo (p = 0.639 → 0.655)
+- Duración²: Mantiene significancia (p < 0.001 → 0.017)
 
 ---
 
@@ -281,7 +358,9 @@ render("informe.Rmd", output_file = "informe_final.html")
 
 - **Multicolinealidad**: Ver `DOCUMENTACION_TECNICA.md` Sección 8.2
 - **Heterocedasticidad**: Ver `DOCUMENTACION_TECNICA.md` Sección 8.4
-- **Errores Estándar Robustos**: [Robust Standard Errors](https://www.stata.com/support/faqs/statistics/robust-standard-errors/)
+- **Errores Estándar Robustos**: [Robust Standard Errors Explained](https://www.stata.com/support/faqs/statistics/robust-standard-errors/)
+- **Test de Breusch-Pagan**: Ver script `04d_heterocedasticidad.R` comentado
+- **Test de White**: Prueba más robusta de heterocedasticidad
 
 ### Tutoriales de R
 
@@ -321,8 +400,17 @@ R: Sí, pero deberás adaptar nombres de variables y transformaciones.
 **P: ¿Los resultados son reproducibles?**  
 R: Sí, la semilla aleatoria está fijada en `setup.R` (seed = 123).
 
+**P: ¿Qué es la heterocedasticidad y por qué debo preocuparme?**  
+R: Es cuando la varianza de los errores no es constante. Hace que los errores estándar sean incorrectos, por eso usamos errores robustos de White (HC3) que corrigen este problema.
+
+**P: ¿Debo usar los resultados de MCO o los robustos?**  
+R: SIEMPRE usa los resultados con errores robustos (HC3) para inferencia estadística. Los coeficientes son los mismos, pero los p-valores y los IC son más confiables.
+
+**P: ¿Por qué algunos resultados cambian con errores robustos?**  
+R: Los errores estándar robustos son generalmente mayores, lo que hace que algunas variables pierdan significancia. Esto es correcto - los resultados de MCO eran demasiado optimistas.
+
 **P: ¿Puedo publicar un paper con estos resultados?**  
-R: Los métodos son estándar y válidos, pero complementa con análisis robustez.
+R: Los métodos son estándar y válidos. Asegúrate de: 1) Reportar ambos (MCO y robustos), 2) Basar conclusiones en errores robustos, 3) Discutir limitaciones (variables omitidas).
 
 ---
 
@@ -332,11 +420,14 @@ Marca cuando completes cada paso:
 
 - [ ] Entorno `pruebasVal` configurado (`setup.R`)
 - [ ] Datos limpios generados (`01_limpieza_datos.R`)
+- [ ] Análisis exploratorio completado (`02_analisis_exploratorio.R`)
 - [ ] Modelo estimado (`03_modelo_regresion.R`)
-- [ ] Supuestos verificados (`04a_multicolinealidad.R`)
+- [ ] Multicolinealidad verificada (`04a_multicolinealidad.R`)
+- [ ] Heterocedasticidad corregida (`04d_heterocedasticidad.R`) ⭐ IMPORTANTE
 - [ ] Gráficos generados (en `resultados/graficos/`)
+- [ ] Errores robustos calculados y revisados
 - [ ] Shiny App funciona correctamente
-- [ ] Resultados revisados e interpretados
+- [ ] Resultados revisados e interpretados con errores robustos
 - [ ] Documentación leída (`DOCUMENTACION_TECNICA.md`)
 
 ---
@@ -346,10 +437,12 @@ Marca cuando completes cada paso:
 Si completaste todos los pasos, ahora tienes:
 
 ✅ Un modelo de regresión lineal múltiple robusto  
-✅ Análisis completo de supuestos  
-✅ Visualizaciones profesionales  
+✅ Análisis completo de supuestos (incluida corrección de heterocedasticidad)  
+✅ Errores estándar robustos de White (HC3) - estadísticamente válidos  
+✅ Visualizaciones profesionales (23+ gráficos)  
 ✅ Aplicación interactiva Shiny  
 ✅ Documentación técnica detallada  
+✅ Inferencias estadísticas confiables  
 
 **Próximos pasos sugeridos:**
 
@@ -369,13 +462,16 @@ Si completaste todos los pasos, ahora tienes:
 | DOCUMENTACION_TECNICA.md | Análisis detallado y metodología | Raíz del proyecto |
 | setup.R | Configuración del entorno | scripts/ |
 | 01_limpieza_datos.R | Limpieza de datos | scripts/ |
+| 02_analisis_exploratorio.R | Análisis exploratorio (EDA) | scripts/ |
 | 03_modelo_regresion.R | Estimación del modelo | scripts/ |
+| 04a_multicolinealidad.R | Verificación VIF | scripts/ |
+| 04d_heterocedasticidad.R | Corrección de heterocedasticidad | scripts/ |
 | app.R | Aplicación Shiny | shiny_app/ |
 
 ---
 
 **Última actualización:** Noviembre 2025  
 **Entorno:** pruebasVal  
-**Versión:** 1.0
+**Versión:** 2.0 - Con corrección de heterocedasticidad mediante errores robustos HC3
 
 *Para soporte adicional, revisa los comentarios dentro de cada script R.*
