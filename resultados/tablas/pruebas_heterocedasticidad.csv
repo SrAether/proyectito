@@ -1,0 +1,3 @@
+Prueba,Estadistico,GL,Valor_p,Conclusion
+Breusch-Pagan,384.739163361683,4,5.512395222967582e-82,Heterocedasticidad presente
+White,679.6149672824915,8,0,Heterocedasticidad presente
