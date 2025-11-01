@@ -31,7 +31,7 @@ source("scripts/setup.R")
 source("scripts/01_limpieza_datos.R")
 source("scripts/02_analisis_exploratorio.R")
 source("scripts/03_modelo_regresion.R")
-source("scripts/04a_multicolinealidad.R")
+source("scripts/04a_multicolinealidad.R") 
 source("scripts/04d_heterocedasticidad.R")
 
 # 3. Lanzar aplicación Shiny
