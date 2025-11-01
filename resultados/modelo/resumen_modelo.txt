@@ -1,0 +1,54 @@
+MODELO DE REGRESIÓN LINEAL MÚLTIPLE
+Análisis de Ingresos Internacionales de Películas IMDB
+========================================================
+
+
+Call:
+lm(formula = ingresos_int_mill ~ presupuesto_mill + idioma_ingles + 
+    pais_fuerte + duracion_cuadrado, data = datos)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-408.08  -33.47   -1.70   21.48 1513.36 
+
+Coefficients:
+                    Estimate Std. Error t value Pr(>|t|)    
+(Intercept)       -1.900e+01  8.736e+00  -2.175 0.029683 *  
+presupuesto_mill   2.181e+00  3.570e-02  61.098  < 2e-16 ***
+idioma_ingles     -2.289e+01  6.741e+00  -3.396 0.000691 ***
+pais_fuerte        1.470e+00  3.130e+00   0.470 0.638734    
+duracion_cuadrado  1.525e-03  3.892e-04   3.918  9.1e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 92.77 on 3556 degrees of freedom
+Multiple R-squared:  0.5606,	Adjusted R-squared:  0.5601 
+F-statistic:  1134 on 4 and 3556 DF,  p-value: < 2.2e-16
+
+
+
+MÉTRICAS DE AJUSTE:
+        Metrica        Valor
+1            R² 5.605742e-01
+2   R² Ajustado 5.600799e-01
+3          RMSE 9.270354e+01
+4           MAE 5.047816e+01
+5 F-estadístico 1.134095e+03
+6     p-valor F 0.000000e+00
+7           AIC 4.237611e+04
+8           BIC 4.241318e+04
+
+
+TABLA DE COEFICIENTES:
+                                Variable   Coeficiente Error_Estandar
+(Intercept)                 (Intercepto) -19.002358862   8.7360466410
+presupuesto_mill  Presupuesto (mill USD)   2.181356839   0.0357027774
+idioma_ingles      Idioma Inglés (dummy) -22.892843869   6.7410348215
+pais_fuerte          País Fuerte (dummy)   1.469562013   3.1299890134
+duracion_cuadrado       Duración² (min²)   0.001524789   0.0003891785
+                     t_valor      p_valor Significancia
+(Intercept)       -2.1751668 2.968329e-02             *
+presupuesto_mill  61.0976792 0.000000e+00           ***
+idioma_ingles     -3.3960430 6.911758e-04           ***
+pais_fuerte        0.4695103 6.387337e-01              
+duracion_cuadrado  3.9179689 9.097714e-05           ***

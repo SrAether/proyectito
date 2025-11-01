@@ -1,0 +1,5 @@
+"Variable","VIF","Interpretacion","Tolerancia"
+"presupuesto_mill",1.17785427080242,"Sin problema",0.849001463753871
+"idioma_ingles",1.12219880125122,"Sin problema",0.89110770648216
+"pais_fuerte",1.01161017320058,"Sin problema",0.988523075876302
+"duracion_cuadrado",1.21085914333698,"Sin problema",0.825859890890466
