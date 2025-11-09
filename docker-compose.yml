@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  imdb-movies-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: imdb-movies-analysis
+    ports:
+      - "3838:3838"   # Shiny Server
+      - "8080:8080"   # Puerto alternativo
+    volumes:
+      # Montar directorios para persistencia de datos
+      - ./data:/home/proyecto/data
+      - ./resultados:/home/proyecto/resultados
+      - ./shiny_app:/home/proyecto/shiny_app
+      # Montar scripts como solo lectura (opcional)
+      - ./scripts:/home/proyecto/scripts:ro
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+      - R_REPOS=https://cloud.r-project.org
+      - SHINY_LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - imdb-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3838/app"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  imdb-network:
+    driver: bridge
+
+# Volúmenes nombrados para persistencia (opcional)
+volumes:
+  imdb-data:
+  imdb-resultados:

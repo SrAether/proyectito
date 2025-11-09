@@ -1,0 +1,58 @@
+# Git
+.git
+.gitignore
+.github
+
+# IDE
+.vscode
+.idea
+*.Rproj
+.Rproj.user
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# R
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj.user
+
+# Documentación no esencial para producción
+Requisitos del proyecto.pdf
+requisitos.txt
+
+# Archivos temporales
+*.tmp
+*.temp
+*.log
+
+# Resultados grandes (se regeneran)
+resultados/graficos/*.png
+resultados/graficos/*.pdf
+resultados/modelo/*.rds
+
+# Node modules (si existieran)
+node_modules/
+npm-debug.log
+
+# Python (si existiera)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+ENV/
+
+# Archivos de backup
+*.bak
+*~
+
+# Archivos comprimidos
+*.zip
+*.tar.gz
+*.rar

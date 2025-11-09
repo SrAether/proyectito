@@ -1,6 +1,31 @@
 # Análisis de Ingresos Internacionales de Películas IMDB (2000-2020)
 
-## 📋 Descripción del Proyecto
+## � Inicio Rápido con Docker (Recomendado)
+
+### Windows
+```cmd
+REM CMD
+run-docker.bat
+
+REM PowerShell
+.\run-docker.ps1
+```
+
+### Linux/macOS
+```bash
+chmod +x run-docker.sh
+./run-docker.sh
+```
+
+**📖 Guías detalladas:**
+- 🪟 Windows: [`WINDOWS_README.md`](WINDOWS_README.md)
+- 🐧 Linux/macOS: [`DOCKER_README.md`](DOCKER_README.md)
+
+**🌐 Acceso:** http://localhost:3838/app
+
+---
+
+## �📋 Descripción del Proyecto
 
 Este proyecto implementa un modelo de regresión lineal múltiple para analizar y predecir los ingresos internacionales de películas utilizando datos de IMDB del período 2000-2020. El análisis incluye limpieza de datos, análisis exploratorio, implementación del modelo, verificación de supuestos econométricos y una aplicación Shiny interactiva.
 
@@ -129,6 +154,47 @@ El proyecto utiliza los siguientes paquetes de R:
 - `kableExtra`
 
 ## 🚀 Guía de Uso
+
+### Opción 1: Docker (Recomendado) 🐳
+
+La forma más rápida y compatible con todos los sistemas operativos:
+
+#### Windows:
+```cmd
+REM CMD (Command Prompt)
+run-docker.bat build
+run-docker.bat start
+
+REM PowerShell
+.\run-docker.ps1 build
+.\run-docker.ps1 start
+
+REM Git Bash/WSL
+chmod +x run-docker.sh
+./run-docker.sh
+```
+
+#### Linux/macOS:
+```bash
+chmod +x run-docker.sh
+./run-docker.sh build
+./run-docker.sh start
+```
+
+**📖 Ver guías completas:**
+- [Guía Docker para Windows](WINDOWS_README.md) - Instrucciones específicas para Windows 10/11
+- [Guía Docker General](DOCKER_README.md) - Linux, macOS y configuración avanzada
+
+**Ventajas de usar Docker:**
+- ✅ Funciona igual en Windows, Linux y macOS
+- ✅ No necesitas instalar R ni paquetes manualmente
+- ✅ Entorno reproducible y aislado
+- ✅ Un solo comando para todo
+- ✅ Actualización automática del pipeline
+
+### Opción 2: Ejecución Manual con R
+
+Si prefieres usar tu instalación local de R:
 
 ### Ejecución Paso a Paso
 
